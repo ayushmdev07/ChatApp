@@ -1,0 +1,112 @@
+﻿@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div class="text-center">
+    <h1 class="display-4">Welcome</h1>
+    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+<input id="user" placeholder="Your name" />
+<button id="joinBtn">Join Chat</button>
+
+<br />
+<br />
+<ul id="messages"></ul>
+<input id="msg" />
+<button id="btn" disabled>Send</button>
+
+<script>
+
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chat")
+        .withAutomaticReconnect()
+        .build();
+
+
+
+
+    connection.on("ReceiveMessage", (user,message) => {
+         const li = document.createElement("li");
+        li.textContent = `${user}: ${message}`;
+         document.getElementById("messages").appendChild(li);
+        // console.log(message);
+    });
+
+
+        connection.on("UserJoined", (user) => {
+        const li = document.createElement("li");
+        li.textContent = `${user} joined the chat`;
+        li.style.color = "green";
+        document.getElementById("messages").appendChild(li);
+    });
+
+    connection.on("UserLeft", (user) => {
+        const li = document.createElement("li");
+        li.textContent = `${user} left the chat`;
+        li.style.color = "red";
+        document.getElementById("messages").appendChild(li);
+    });
+
+
+    connection.start()
+        .then(() => {
+            console.log("Connected");
+            // document.getElementById("btn").disabled = false;
+            // const user = document.getElementById("user").value || "Guest";
+            // connection.invoke("Join", user);
+            // document.getElementById("user").disabled = true;
+
+        })
+
+        .catch(err => console.error(err));
+            document.getElementById("joinBtn").onclick = async () => {
+        const user = document.getElementById("user").value.trim();
+        if (!user) return alert("Please enter your name");
+
+        await connection.invoke("Join", user);
+
+        document.getElementById("user").disabled = true;
+        document.getElementById("joinBtn").disabled = true;
+        document.getElementById("btn").disabled = false;
+    };
+
+    document.getElementById("btn").onclick = sendMessage;
+
+    const msgInput = document.getElementById("msg");
+    msgInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+        async function sendMessage(){
+        const user = document.getElementById("user").value.trim();
+        const message = document.getElementById("msg").value.trim();
+
+        if (!user || !message) return;
+
+        if (connection.state === signalR.HubConnectionState.Connected) {
+
+            await connection.invoke("SendMessage",user, message);
+            document.getElementById("msg").value = "";
+            document.getElementById("msg").focus();
+
+        } else {
+            console.log("Not connected");
+        }
+    }
+
+
+        window.addEventListener("beforeunload", () => {
+        const user = document.getElementById("user").value || "Guest";
+        connection.invoke("Leave", user);
+    });
+
+
+</script>
+
+
