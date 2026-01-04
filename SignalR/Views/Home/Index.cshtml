@@ -70,6 +70,11 @@
     
 }
 
+    #ChatMessages {
+        scroll-behavior: smooth;
+    }
+
+
 </style>
 
 <div class="bg-gray-100 flex items-center justify-center min-h-screen">
@@ -78,7 +83,7 @@
     <!-- Main modal -->
 
 
-    <div id="authentication-modal" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full ">
+    <div id="authentication-modal" data-modal-backdrop="static" data-modal-closable="false" tabindex="-1" aria-hidden="true" class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 flex justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full ">
         <div class="relative p-4 w-full max-w-md max-h-full ">
             <!-- Modal content -->
             <div class="relative border border-default border rounded-base shadow-sm p-4 md:p-6  modaldiv">
@@ -93,7 +98,7 @@
                     <div class="mb-4">
                         <input id="user" type="text" class="bg-neutral-secondary-medium border border-default-medium text-heading text-sm rounded-base focus:ring-brand focus:border-brand block w-full px-3 py-2.5 shadow-xs placeholder:text-body" placeholder="Enter Your Name" required />
                     </div>
-                    <button id="joinBtn" data-modal-hide="authentication-modal" type="button" class="split-btn mb-3">
+                    <button id="joinBtn" type="button" class="split-btn mb-3">
                         <div class="sb-text">Go to Chat</div>
                         <div class="sb-icon">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ff2e63" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -151,29 +156,10 @@
             </div>
         </div>
 
-        <div class="flex flex-col gap-6 p-0 mt-12 overflow-y-auto h-[55%]">
-
-            <div class="self-start">
-                <div class="bg-[#e0dfff] text-gray-800 py-3 px-6 rounded-r-full rounded-tl-none rounded-bl-none shadow-sm flex items-center w-fit">
-                    <span class="font-medium">Hi</span>
-                    <ul id="messages"></ul>
-
-                </div>
-            </div>
-
-            <div class="self-start">
-                <div class="bg-[#e0dfff] text-gray-800 py-3 px-6 rounded-r-full rounded-tl-none rounded-bl-none shadow-sm flex items-center w-fit max-w-[85%]">
-                    <span class="font-medium">Hello Ayush ! How are you ?</span>
-                </div>
-            </div>
-
-            <div class="self-end mt-16">
-                <div class="bg-[#e0dfff] text-gray-800 py-3 px-6 rounded-l-full rounded-tr-none rounded-br-none shadow-sm flex items-center w-fit">
-                    <span class="font-medium">Hi Vishal, I am Fine</span>
-                    <ul id="messagesalert" ></ul>
-                </div>
-            </div>
+        <div id="ChatMessages" class="flex flex-col gap-2 p-0 mt-12 overflow-y-auto h-[60%]">
+            <div class="flex-1"></div>
         </div>
+
 
         <div class="absolute bottom-8 left-0 right-0 px-6">
             <div class="bg-white rounded-full p-2 shadow-lg flex items-center">
@@ -184,9 +170,6 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
                         <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z" />
                     </svg>
-                    <!-- <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 transform -rotate-45 translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg> -->
                 </button>
             </div>
         </div>
@@ -217,12 +200,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.5.2/flowbite.min.js"></script>
 
 <script>
-    window.addEventListener("DOMContentLoaded", () => {
-        const modalEl = document.getElementById("authentication-modal");
+    let loginModal;
 
-        const modal = new Modal(modalEl);
-        modal.show();
-    });
+        window.addEventListener("DOMContentLoaded", () => {
+            const modalEl = document.getElementById("authentication-modal");
+
+            const options = {
+                backdrop: 'static',
+                closable: false,
+                onHide: () => {
+                    console.log('modal is hidden');
+                }
+            };
+
+            loginModal = new Modal(modalEl, options);
+            loginModal.show();
+        });
 </script>
 
 
@@ -240,52 +233,161 @@
         .build();
 
 
+    let CurrentUser = "Guest";
 
 
-    connection.on("ReceiveMessage", (user,message) => {
-         const li = document.createElement("li");
-        li.textContent = `${user}: ${message}`;
-         document.getElementById("messagesalert").appendChild(li);
-        // console.log(message);
+
+
+    connection.on("UserJoined", (user) => {
+        const chat = document.getElementById("ChatMessages");
+        const div = document.createElement("div");
+
+        div.className = "self-center text-xs text-green-600";
+        div.textContent = `${user} joined the chat`;
+
+        chat.appendChild(div);
+        chat.scrollTop = chat.scrollHeight;
     });
 
 
-        connection.on("UserJoined", (user) => {
-        const li = document.createElement("li");
-        li.textContent = `${user} joined the chat`;
-        li.style.color = "green";
-        document.getElementById("messages").appendChild(li);
+
+ 
+        connection.on("ReceiveMessage", (user, message) => {
+
+            var session = "AM";
+            var Timestamp = "";
+
+           
+                var hour = new Date().getHours();
+                var min = new Date().getMinutes();
+                
+                if (min < 10) min = "0" + min;
+
+
+                if (hour >= 12) {
+                    session = "PM";
+                }
+                if (hour == 0) {
+                    hour = 12;
+                }
+                else if (hour > 12) {
+                    hour = hour - 12;
+                }
+                    Timestamp = hour + ":" + min + " " + session;
+            
+
+
+
+
+        const chat = document.getElementById("ChatMessages");
+        const wrapper = document.createElement("div");
+
+        const isMe = user === CurrentUser;
+    wrapper.className = `flex w-full ${isMe ? 'justify-end' : 'justify-start'}`;
+
+    wrapper.innerHTML = `
+        <div class="
+            bg-[#e0dfff] text-gray-800
+            px-3 py-1.5 text-sm
+            leading-tight
+            max-w-[65%]
+            break-words
+            rounded-xl
+            ${isMe ? 'rounded-l-2xl rounded-tr-md' : 'rounded-r-2xl rounded-tl-md'}
+        ">
+            ${message}
+            <div class="text-[10px] text-gray-500 text-right mt-0">
+                ${isMe ? "" : `[${user}]&nbsp;`}${Timestamp}
+            </div>
+        </div>
+    `;
+
+
+        chat.appendChild(wrapper);
+        chat.scrollTop = chat.scrollHeight;
     });
 
-    connection.on("UserLeft", (user) => {
-        const li = document.createElement("li");
-        li.textContent = `${user} left the chat`;
-        li.style.color = "red";
-        document.getElementById("messages").appendChild(li);
-    });
+
+
+connection.on("UserLeft", (user) => {
+    const chat = document.getElementById("ChatMessages");
+    const div = document.createElement("div");
+
+    div.className = "self-center text-xs text-red-600";
+    div.textContent = `${user} left the chat`;
+
+    chat.appendChild(div);
+    chat.scrollTop = chat.scrollHeight;
+});
+
 
 
     connection.start()
         .then(() => {
             console.log("Connected");
-            // document.getElementById("btn").disabled = false;
-            // const user = document.getElementById("user").value || "Guest";
-            // connection.invoke("Join", user);
-            // document.getElementById("user").disabled = true;
 
         })
 
         .catch(err => console.error(err));
-            document.getElementById("joinBtn").onclick = async () => {
-        const user = document.getElementById("user").value.trim();
-        if (!user) return alert("Please enter your name");
 
-        await connection.invoke("Join", user);
+        // Join button click
+    document.getElementById("joinBtn").onclick = async () => {
+            const user = document.getElementById("user").value.trim();
 
-        document.getElementById("user").disabled = true;
-        document.getElementById("joinBtn").disabled = true;
-        document.getElementById("btn").disabled = false;
-    };
+            if (!user) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Name Required',
+                    text: 'Please enter your name to join the chat!',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#ff2e63', 
+                    background: '#fff',
+                    color: '#333',
+                
+                    backdrop: `
+                        rgba(0,0,123,0.4)
+                        left top
+                        no-repeat
+                    `
+                });
+                return;
+            }
+
+            CurrentUser = user;
+
+            try {
+                await connection.invoke("Join", user);
+
+                document.getElementById("user").disabled = true;
+                document.getElementById("joinBtn").disabled = true;
+                document.getElementById("btn").disabled = false;
+
+              
+                loginModal.hide();
+
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                });
+                Toast.fire({
+                    icon: 'success',
+                    title: 'Welcome to Chatrr!'
+                });
+
+            } catch (err) {
+                console.error(err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Connection Error',
+                    text: 'Could not connect to the chat server.',
+                    confirmButtonColor: '#ff2e63'
+                });
+            }
+        };
+
 
     document.getElementById("btn").onclick = sendMessage;
 
