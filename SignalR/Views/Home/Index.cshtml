@@ -120,7 +120,7 @@
     @* Modal End *@
 
 
-    <div class="relative w-full max-w-md h-[850px] bg-gradient-to-b from-[#ff587e] via-[#ff8c61] to-[#ffc34d] shadow-2xl overflow-hidden sm:rounded-[3rem] border-8 border-white/20">
+    <div class="relative w-full max-w-md h-[100vh] bg-gradient-to-b from-[#ff587e] via-[#ff8c61] to-[#ffc34d] shadow-2xl overflow-hidden sm:rounded-[3rem] border-8 border-white/20">
 
         <div class="px-6 pt-8 pb-4">
             <div class="flex items-center justify-between bg-white/30 backdrop-blur-sm rounded-full px-6 py-4 shadow-sm">
@@ -160,6 +160,10 @@
             <div class="flex-1"></div>
         </div>
 
+        <div id="typingIndicator"
+             class="absolute bottom-28 left-6 text-xs text-white/90 hidden italic">
+            Someone is typing...
+        </div>
 
         <div class="absolute bottom-8 left-0 right-0 px-6">
             <div class="bg-white rounded-full p-2 shadow-lg flex items-center">
@@ -234,6 +238,14 @@
 
 
     let CurrentUser = "Guest";
+
+    let isTyping = false;
+    let typingTimer;
+
+
+
+
+
 
 
 
@@ -392,12 +404,40 @@ connection.on("UserLeft", (user) => {
     document.getElementById("btn").onclick = sendMessage;
 
     const msgInput = document.getElementById("msg");
+
+        msgInput.addEventListener("input", () => {
+        if (!isTyping) {
+            isTyping = true;
+            connection.invoke("Typing", CurrentUser);
+        }
+
+        clearTimeout(typingTimer);
+
+        typingTimer = setTimeout(() => {
+            isTyping = false;
+            connection.invoke("StopTyping", CurrentUser);
+        }, 1000);
+    });
     msgInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
             sendMessage();
         }
     });
+
+
+
+        connection.on("ShowTyping", (user) => {
+        const indicator = document.getElementById("typingIndicator");
+        indicator.textContent = `${user} is typing...`;
+        indicator.classList.remove("hidden");
+    });
+
+    connection.on("HideTyping", () => {
+        document.getElementById("typingIndicator")
+            .classList.add("hidden");
+    });
+
 
         async function sendMessage(){
         const user = document.getElementById("user").value.trim();
@@ -407,7 +447,12 @@ connection.on("UserLeft", (user) => {
 
         if (connection.state === signalR.HubConnectionState.Connected) {
 
+
             await connection.invoke("SendMessage",user, message);
+
+            isTyping = false;
+            connection.invoke("StopTyping", user);
+
             document.getElementById("msg").value = "";
             document.getElementById("msg").focus();
 

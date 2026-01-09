@@ -16,5 +16,14 @@ namespace SignalR.Hubs
         {
             await Clients.All.SendAsync("UserLeft", user);
         }
+        public async Task Typing(string user)
+        {
+            await Clients.Others.SendAsync("ShowTyping", user);
+        }
+
+        public async Task StopTyping(string user)
+        {
+            await Clients.Others.SendAsync("HideTyping", user);
+        }
     }
 }
